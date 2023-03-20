@@ -3,7 +3,9 @@
  */
 
 import {Fragment, useMemo} from 'react';
+import imageSize from 'image-size';
 import {useRouter} from 'next/router';
+import {promisify} from 'util';
 import {MDXComponents} from 'components/MDX/MDXComponents';
 import {Page} from 'components/Layout/Page';
 import sidebarHome from '../sidebarHome.json';
@@ -11,6 +13,8 @@ import sidebarLearn from '../sidebarLearn.json';
 import sidebarReference from '../sidebarReference.json';
 import sidebarCommunity from '../sidebarCommunity.json';
 import sidebarBlog from '../sidebarBlog.json';
+const sizeOf = promisify(imageSize);
+import imgPath from 'path';
 
 export default function Layout({content, toc, meta}) {
   const parsedContent = useMemo(
@@ -75,6 +79,9 @@ function reviveNodeOnClient(key, val) {
       props = {children: props.children};
     }
     if (MDXComponents[type]) {
+      if (type === 'img') {
+        console.log('++++++++++++++', JSON.stringify(props));
+      }
       type = MDXComponents[type];
     }
     if (!type) {
@@ -135,7 +142,7 @@ export async function getStaticProps(context) {
       lockfile: fs.readFileSync(process.cwd() + '/yarn.lock', 'utf8'),
     })
   );
-  const cached = await store.get(hash);
+  const cached = undefined; //await store.get(hash);
   if (cached) {
     console.log(
       'Reading compiled MDX for /' + path + ' from ./node_modules/.cache/'
@@ -216,6 +223,43 @@ export async function getStaticProps(context) {
   const fm = require('gray-matter');
   const meta = fm(mdx).data;
 
+  children = await Promise.all(
+    children.map(async (val) => {
+      function eachRecursive(obj) {
+        for (var k in obj) {
+          if (typeof obj[k] == 'object' && obj[k] !== null)
+            eachRecursive(obj[k]);
+          else {
+            if (k === 'type' && obj[k] === 'img')
+              console.log(`key: ${k}, value: ${JSON.stringify(obj)}`);
+            obj.props = {...obj.props, pro: 'me'};
+            // do something...
+          }
+        }
+      }
+      eachRecursive(val);
+
+      // if(Array.isArray(val.props.children)){
+      //   let src;
+      // console.log({props:val.props.children.filter((v)=>v.type=='img').map(b=>{src=b.props.src;return b.props.src})});
+      //   const res = src?await sizeOf(
+      //     imgPath.join(process.cwd(), "public", src)
+      //   ):undefined;
+      //  console.log("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",{res})}
+      // // components
+      // const {mdxType, originalType, parentName, ...cleanProps} = val.props;
+      // // finding height & width of the image
+      // let type = typeof val.type === 'string' ? val.type : mdxType;
+      // if (type === 'img') {
+
+      //   // return val;
+      //   // val.props = {...val.props, pro: 'qwertyuiop'};
+      // }
+
+      return val;
+    })
+  );
+
   const output = {
     props: {
       content: JSON.stringify(children, stringifyNodeOnServer),
@@ -230,11 +274,24 @@ export async function getStaticProps(context) {
       // Remove fake MDX props.
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const {mdxType, originalType, parentName, ...cleanProps} = val.props;
+      // finding height & width of the image
+      let type = typeof val.type === 'string' ? val.type : mdxType;
+      // if(type==='img'){
+      //   const res = await sizeOf(
+      //     path.join(process.cwd(), "public", node.properties.src)
+      //   );
+      //  console.log("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",{res})
+      //   if (!res) throw Error(`Invalid image with src "${node.properties.src}"`);
+
+      //   cleanProps.width = res.width;
+      //   cleanProps.height = res.height;
+      // }
+
       return [
         '$r',
-        typeof val.type === 'string' ? val.type : mdxType,
+        type, //type of node
         val.key,
-        cleanProps,
+        {...cleanProps, hi: 'whadup'},
       ];
     } else {
       return val;
@@ -242,7 +299,7 @@ export async function getStaticProps(context) {
   }
 
   // Cache it on the disk.
-  await store.set(hash, output);
+  // await store.set(hash, output);
   return output;
 }
 
