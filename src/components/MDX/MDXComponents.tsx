@@ -30,6 +30,7 @@ import ButtonLink from 'components/ButtonLink';
 import {TocContext} from './TocContext';
 import type {Toc, TocItem} from './TocContext';
 import {TeamMember} from './TeamMember';
+import NextImage from 'next/image';
 
 function CodeStep({children, step}: {children: any; step: number}) {
   return (
@@ -235,7 +236,7 @@ function Illustration({
   return (
     <div className="relative group before:absolute before:-inset-y-16 before:inset-x-0 my-16 mx-0 2xl:mx-auto max-w-4xl 2xl:max-w-6xl">
       <figure className="my-8 flex justify-center">
-        <img
+        <Image
           src={src}
           alt={alt}
           style={{maxHeight: 300}}
@@ -271,7 +272,7 @@ function IllustrationBlock({
   const images = imageInfos.map((info, index) => (
     <figure key={index}>
       <div className="bg-white rounded-lg p-4 flex-1 flex xl:p-6 justify-center items-center my-4">
-        <img src={info.src} alt={info.alt} height={info.height} />
+        <Image src={info.src} alt={info.alt} height={info.height} />
       </div>
       {info.caption ? (
         <figcaption className="text-secondary dark:text-secondary-dark text-center leading-tight mt-4">
@@ -368,8 +369,26 @@ function YouTubeIframe(props: any) {
   );
 }
 
-function Image(props: any) {
-  return <img className="max-w-[calc(min(700px,100%))]" {...props} />;
+function Image(allProps: any) {
+  const {height, width, style, ...props} = allProps;
+  return (
+    <div
+      style={{
+        ...(style ? style : {}),
+        ...(width ? {width: `${width}px`} : {}),
+        ...(height ? {maxHeight: `${height}px`} : {}),
+      }}
+      className="relative max-w-[calc(min(700px,100%))] next-image-wrapper:!static">
+      <NextImage
+        {...props}
+        src={
+          props?.src?.startsWith('/') ? props.src : props.src.replace('..', '')
+        }
+        layout="fill"
+        className="object-contain !w-full !relative !h-[unset]"
+      />
+    </div>
+  );
 }
 
 export const MDXComponents = {
